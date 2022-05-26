@@ -1,0 +1,3 @@
+
+//instalar
+npm install bcryptjs cookie-parser jsonwebtoken mysql express ejs express-ejs-layouts
