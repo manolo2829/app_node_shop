@@ -14,14 +14,40 @@ exports.signup = async(req, res) => {
         const pass = req.body.pass
         // encriptamos la contraseña con el metodo hash
         let passHash = await bcryptjs.hash(pass, 8)
+        
+        if(!email || !name || !username || !pass){
+            res.render('signup', {
+                alert:true,
+                alertTitle: 'Advertencia',
+                alertMessage: 'Ingrese un usuario y password',
+                alertIcon: 'info',
+                showConfirmButton: true,
+                timer: false,
+                ruta: '/signup'
+            })
+        }
         // console.log(passHash)
         conexion.query('INSERT INTO users SET ?', {email: email, name: name, username: username, password:passHash}, (error, results) => {
             if(error){console.log(error)}
-            res.json('usuario creado')
+            res.render('signup', {
+                alert:true,
+                alertTitle: 'Conexion exitosa',
+                alertMessage: '¡LOGIN CORRECTO!',
+                alertIcon: 'success',
+                showConfirmButton: false,
+                timer: 800,
+                ruta: '/signin'
+            })
         })
     }catch (error) {
-        res.json({
-            "error": error.message
+        res.render('signup', {
+            alert:true,
+            alertTitle: 'Error',
+            alertMessage: 'Ocurrio un error inesperado',
+            alertIcon: 'info',
+            showConfirmButton: true,
+            timer: false,
+            ruta: '/signup'
         })
     }
 }
@@ -29,17 +55,32 @@ exports.signup = async(req, res) => {
 // procedimineto para login
 exports.signin = async(req, res) => {
     try {
-        console.log('hola')
         const email = req.body.email
         const pass = req.body.pass
         console.log(email+' - '+pass)
 
         if(!email || !pass){
-            res.json('complete los datos')
+            res.render('signin', {
+                alert:true,
+                alertTitle: 'Advertencia',
+                alertMessage: 'Ingrese un usuario y password',
+                alertIcon: 'info',
+                showConfirmButton: true,
+                timer: false,
+                ruta: '/signin'
+            })
         }else{
             conexion.query('SELECT * FROM users WHERE email = ?', [email], async(error, results) => {
                 if(results.length == 0 || !(await bcryptjs.compare(pass, results[0].password))){
-                    res.json('datos incorrectos')
+                    res.render('signin', {
+                        alert:true,
+                        alertTitle: 'Error',
+                        alertMessage: 'Usuario y/o Password incorrectas',
+                        alertIcon: 'error',
+                        showConfirmButton: true,
+                        timer: false,
+                        ruta: '/signin'
+                    })  
                     console.log(error)
                 }else{
                     // incio de sision ok
@@ -57,7 +98,15 @@ exports.signin = async(req, res) => {
                         httpOnly: true
                     }
                     res.cookie('jwt', token, cookiesOptions)
-                    res.json('login completo')
+                    res.render('signin', {
+                        alert:true,
+                        alertTitle: 'Conexion exitosa',
+                        alertMessage: '¡LOGIN CORRECTO!',
+                        alertIcon: 'success',
+                        showConfirmButton: false,
+                        timer: 800,
+                        ruta: '/'
+                    })
                 }
             })
         }
@@ -87,8 +136,7 @@ exports.isAuthenticated = async(req, res, next) => {
             return next()
         }
     }else{
-        res.redirect('/login')
-
+        res.redirect('/')
     }
 }
 
