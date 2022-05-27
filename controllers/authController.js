@@ -7,6 +7,7 @@ const {promisify} = require('util')
 // procedimiento para registrarnos
 exports.signup = async(req, res) => {
     try{
+        console.log(req)
         const email = req.body.email
         const name = req.body.name
         const username = req.body.username
@@ -14,7 +15,7 @@ exports.signup = async(req, res) => {
         // encriptamos la contraseña con el metodo hash
         let passHash = await bcryptjs.hash(pass, 8)
         // console.log(passHash)
-        conexion.query('INSERT INTO users SET ?', {email: email, name: name, username: username, pass:passHash}, (error, results) => {
+        conexion.query('INSERT INTO users SET ?', {email: email, name: name, username: username, password:passHash}, (error, results) => {
             if(error){console.log(error)}
             res.json('usuario creado')
         })
@@ -28,15 +29,16 @@ exports.signup = async(req, res) => {
 // procedimineto para login
 exports.signin = async(req, res) => {
     try {
-        const user = req.body.user
+        console.log('hola')
+        const email = req.body.email
         const pass = req.body.pass
-        // console.log(user+' - '+pass)
+        console.log(email+' - '+pass)
 
-        if(!user || !pass){
+        if(!email || !pass){
             res.json('complete los datos')
         }else{
-            conexion.query('SELECT * FROM users WHERE user = ?', [user], async(error, results) => {
-                if(results.length == 0 || !(await bcryptjs.compare(pass, results[0].pass))){
+            conexion.query('SELECT * FROM users WHERE email = ?', [email], async(error, results) => {
+                if(results.length == 0 || !(await bcryptjs.compare(pass, results[0].password))){
                     res.json('datos incorrectos')
                     console.log(error)
                 }else{
@@ -44,14 +46,14 @@ exports.signin = async(req, res) => {
                     const id = results[0].id
                     
                     // le pasamos la clave secreta
-                    const token = jwt.sign({id:id}, process.env.JWT_SECRETO, {
-                        expiresIn: process.env.JWT_TIEMPO_EXPIRA
+                    const token = jwt.sign({id:id}, 'super_secreto', {
+                        expiresIn: '7d'
                     })
 
-                    console.log('TOKEN: '+ token + ' para el usuario: '+user)
+                    console.log('TOKEN: '+ token + ' para el usuario: '+ email)
 
                     const cookiesOptions = {
-                        expires: new Date(Date.now()+process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000 ),
+                        expires: new Date(Date.now()+ 90 * 24 * 60 * 60 * 1000 ),
                         httpOnly: true
                     }
                     res.cookie('jwt', token, cookiesOptions)
@@ -60,7 +62,9 @@ exports.signin = async(req, res) => {
             })
         }
     } catch (error) {
-        console.log(error)
+        res.json({
+            "error" : error.message
+        })
     }
 }
 
